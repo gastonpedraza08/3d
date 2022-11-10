@@ -9,7 +9,7 @@ import Stats from "three/examples/jsm/libs/stats.module";
 const _yAxis = /*@__PURE__*/new THREE.Vector3(0, 1, 0);
 const _q1 = /*@__PURE__*/new THREE.Quaternion();
 let velocity = 0.0, speed = 0;
-let _v1$4 = new THREE.Vector3();
+let vectorHelper = new THREE.Vector3();
 let _zAxis = new THREE.Vector3(0, 0, 1);
 let keys = {
     w: false,
@@ -191,6 +191,13 @@ function createSphere() {
         material: defaultMaterial
     });
     body.position.copy(position);
+
+    body.position.add = function(v) {
+        this.x += v.x;
+        this.y += v.y;
+        this.z += v.z;
+    }
+
     world.addBody(body);
 
     // Save in objects
@@ -221,11 +228,9 @@ const animate = () =>
     }
 
     velocity += (speed - velocity) * 0.3;
-    _v1$4.copy(_zAxis).applyQuaternion(body.quaternion);
-    position = _v1$4.multiplyScalar(velocity);
-    body.position.x += position.x;
-    body.position.z += position.z;
-    body.position.y += position.y;
+    vectorHelper.copy(_zAxis).applyQuaternion(body.quaternion);
+    position = vectorHelper.multiplyScalar(velocity);
+    body.position.add(position);
 
     // Update physics
     world.step(1 / 60, deltaTime, 3);
