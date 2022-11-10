@@ -7,6 +7,15 @@ import * as CANNON from 'cannon-es';
 // utils 
 const _yAxis = /*@__PURE__*/new THREE.Vector3(0, 1, 0);
 const _q1 = /*@__PURE__*/new THREE.Quaternion();
+let velocity = 0.0, speed = 0;
+let _v1$4 = new THREE.Vector3();
+let _zAxis = new THREE.Vector3(0, 0, 1);
+let keys = {
+    w: false,
+    s: false,
+    a: false,
+    d: false,
+}
 
 //classes
 CANNON.Body.prototype.rotateOnAxis = function (axis, angle) {
@@ -63,15 +72,29 @@ function initThree() {
 function createControls() {
     window.addEventListener('keydown', function(e) {
         if (e.key === 'w') {
-            body.position.z += 0.05;
+            keys.w = true;
         } else if (e.key === 's') {
-            // s
-        } else if (e.key === 'a') {
-            body.rotateY(0.05);
+            keys.s = true;
+        }
+        if (e.key === 'a') {
+            keys.a = true;
         } else if (e.key === 'd') {
-            body.rotateY(-0.05);
+            keys.d = true;
         }
     });
+
+    window.addEventListener('keyup', function(e) {
+        if (e.key === 'w') {
+            keys.w = false;
+        } else if (e.key === 's') {
+            keys.s = false;
+        }
+        if (e.key === 'a') {
+            keys.a = false;
+        } else if (e.key === 'd') {
+            keys.d = false;
+        }
+     });
 }
 
 function setupRenderer() {
@@ -170,11 +193,36 @@ function createSphere() {
     objectsToUpdate.push({ mesh, body });
 };
 
+let position;
+
 const animate = () =>
 {
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - oldElapsedTime;
     oldElapsedTime = elapsedTime;
+
+    // player movement
+    speed = 0;
+
+    if (keys.w) {
+        speed = -0.1;
+    } else if (keys.s) {
+        speed = 0.1;
+    }
+
+    if (keys.a) {
+        body.rotateY(0.05);
+    } else if (keys.d) {
+        body.rotateY(-0.05);
+    }
+
+    velocity += (speed - velocity) * 0.3;
+    _v1$4.copy(_zAxis).applyQuaternion(body.quaternion);
+    position = _v1$4.multiplyScalar(velocity);
+    body.position.x += position.x;
+    body.position.z += position.z;
+    body.position.y += position.y;
+    //box.mesh.translate(position);
 
     // Update physics
     world.step(1 / 60, deltaTime, 3);
