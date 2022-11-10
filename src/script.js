@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as dat from 'lil-gui';
 import * as CANNON from 'cannon-es';
+import Stats from "three/examples/jsm/libs/stats.module";
 
 // utils 
 const _yAxis = /*@__PURE__*/new THREE.Vector3(0, 1, 0);
@@ -16,6 +17,9 @@ let keys = {
     a: false,
     d: false,
 }
+
+// stats
+const stats = Stats();
 
 //classes
 CANNON.Body.prototype.rotateOnAxis = function (axis, angle) {
@@ -34,7 +38,6 @@ CANNON.Body.prototype.rotateOnAxis = function (axis, angle) {
 
 CANNON.Body.prototype.rotateY = function(angle) {
     body.rotateOnAxis(_yAxis, angle);
-    console.log(body.quaternion.x)
 }
 
 // three variables
@@ -52,6 +55,7 @@ let relativeCameraOffset;
 let world, defaultMaterial, body;
 
 function initThree() {
+    document.body.appendChild(stats.dom);
     initCannon();
 
     canvas = document.querySelector('canvas.webgl');
@@ -222,7 +226,6 @@ const animate = () =>
     body.position.x += position.x;
     body.position.z += position.z;
     body.position.y += position.y;
-    //box.mesh.translate(position);
 
     // Update physics
     world.step(1 / 60, deltaTime, 3);
@@ -240,8 +243,9 @@ const animate = () =>
     camera.position.copy(cameraOffset);
     camera.lookAt(mesh.position);
 
-    renderer.render(scene, camera)
-    window.requestAnimationFrame(animate)
+    renderer.render(scene, camera);
+    window.requestAnimationFrame(animate);
+    stats.update();
 }
 
 initThree();
