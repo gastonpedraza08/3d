@@ -4,6 +4,30 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import * as dat from 'lil-gui';
 import * as CANNON from 'cannon-es';
 
+// utils 
+const _yAxis = /*@__PURE__*/new THREE.Vector3(0, 1, 0);
+const _q1 = /*@__PURE__*/new THREE.Quaternion();
+
+//classes
+CANNON.Body.prototype.rotateOnAxis = function (axis, angle) {
+    _q1.setFromAxisAngle(axis, angle);
+    let quaternionHelper = new THREE.Quaternion();
+    quaternionHelper.copy(this.quaternion);
+    
+    quaternionHelper.multiply(_q1);
+    this.quaternion.x = quaternionHelper._x;
+    this.quaternion.y = quaternionHelper._y;
+    this.quaternion.z = quaternionHelper._z;
+    this.quaternion.w = quaternionHelper._w;
+
+    return this;
+}
+
+CANNON.Body.prototype.rotateY = function(angle) {
+    body.rotateOnAxis(_yAxis, angle);
+    console.log(body.quaternion.x)
+}
+
 // three variables
 let canvas, scene, camera, renderer, mesh;
 let sizes = {
@@ -39,9 +63,13 @@ function initThree() {
 function createControls() {
     window.addEventListener('keydown', function(e) {
         if (e.key === 'w') {
-            // w
+            body.position.z += 0.05;
         } else if (e.key === 's') {
             // s
+        } else if (e.key === 'a') {
+            body.rotateY(0.05);
+        } else if (e.key === 'd') {
+            body.rotateY(-0.05);
         }
     });
 }
@@ -161,8 +189,8 @@ const animate = () =>
     const cameraOffset = relativeCameraOffset.applyMatrix4(
         mesh.matrixWorld
     );
-    //camera.position.copy(cameraOffset);
-    //camera.lookAt(mesh.position);
+    camera.position.copy(cameraOffset);
+    camera.lookAt(mesh.position);
 
     renderer.render(scene, camera)
     window.requestAnimationFrame(animate)
