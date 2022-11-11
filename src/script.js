@@ -90,7 +90,7 @@ function createWalls() {
     const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
     const boxMaterial = new THREE.MeshStandardMaterial();
 
-    let width = 3, height = 3, depth = 1;
+    let width = 3, height = 3, depth = 0.001;
     let position = new THREE.Vector3(0, 0, -5);
 
     // Three.js mesh
@@ -104,7 +104,6 @@ function createWalls() {
     const shape = new CANNON.Box(new CANNON.Vec3(width, height, depth))
 
     const boxBody = new CANNON.Body({
-        position: new CANNON.Vec3(position.x, position.y, position.z),
         shape: shape,
         type: CANNON.Body.STATIC,
         material: defaultMaterial
