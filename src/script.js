@@ -81,8 +81,36 @@ function initThree() {
     createLight();
     setupRenderer();
     createControls();
+    createWalls();
 
     animate();
+}
+
+function createWalls() {
+    const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const boxMaterial = new THREE.MeshStandardMaterial();
+
+    let width = 3, height = 3, depth = 1;
+    let position = new THREE.Vector3(0, 0, -5);
+
+    // Three.js mesh
+    const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial)
+    boxMesh.scale.set(width, height, depth)
+    boxMesh.castShadow = true
+    boxMesh.position.copy(position)
+    scene.add(boxMesh)
+
+    // Cannon.js body
+    const shape = new CANNON.Box(new CANNON.Vec3(width, height, depth))
+
+    const boxBody = new CANNON.Body({
+        position: new CANNON.Vec3(position.x, position.y, position.z),
+        shape: shape,
+        type: CANNON.Body.STATIC,
+        material: defaultMaterial
+    })
+    boxBody.position.copy(position)
+    world.addBody(boxBody)
 }
 
 function createControls() {
@@ -206,7 +234,8 @@ function createSphere() {
         mass: 1,
         position: new CANNON.Vec3(0, 3, 0),
         shape: shape,
-        material: defaultMaterial
+        material: defaultMaterial,
+        angularFactor: new CANNON.Vec3(0, 0, 0)
     });
     body.position.copy(position);
 
