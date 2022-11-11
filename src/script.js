@@ -88,8 +88,40 @@ function initThree() {
     setupRenderer();
     createControls();
     createWalls();
+    createStairs();
 
     animate();
+}
+
+function createStairs() {
+    let width = 1, height = 8, depth = 0.001;
+    let position = { x: 0, z: -3, y: height / 4 };
+
+    const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const boxMaterial = new THREE.MeshStandardMaterial();
+
+    // Three.js mesh
+    const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
+    mesh.scale.set(width, height, depth);
+    mesh.position.copy(position);
+    mesh.rotateX(-1);
+    scene.add(mesh);
+
+    // Cannon.js body
+    const shape = new CANNON.Box(new CANNON.Vec3(
+        width / 2,
+        height / 2,
+        depth / 2
+    ));
+
+    let body = new CANNON.Body({
+        type: CANNON.Body.STATIC,
+        position,
+        shape: shape,
+        material: defaultMaterial,
+        quaternion: mesh.quaternion,
+    });
+    world.addBody(body);
 }
 
 function createWalls() {
