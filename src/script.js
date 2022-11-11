@@ -76,7 +76,13 @@ function initThree() {
     camera.position.set(0, 2, 3);
     scene.add(camera);
 
-    createSphere();
+    let player = createSphere();
+    body = player.body;
+    mesh = player.mesh;
+    
+    //let player = createBox();
+    //body = player.body;
+    //mesh = player.mesh;
     createFloor();
     createLight();
     setupRenderer();
@@ -87,29 +93,98 @@ function initThree() {
 }
 
 function createWalls() {
-    const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const boxMaterial = new THREE.MeshStandardMaterial();
+    let width = 10, height = 2, depth = 0.001;
+    let walls = [
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(-width / 3, height / 2, -5),
+            rotation: 0,
+        },
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(width / 3, height / 2, -5),
+            rotation: 0,
+        },
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(width / 3, height / 2, 5),
+            rotation: 0,
+        },
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(-width / 3, height / 2, 5),
+            rotation: 0,
+        },
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(5, height / 2, width / 3),
+            rotation: Math.PI / 2,
+        },
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(5, height / 2, -width / 3),
+            rotation: Math.PI / 2,
+        },
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(-5, height / 2, width / 3),
+            rotation: Math.PI / 2,
+        },
+        {
+            width: width / 3,
+            height,
+            depth,
+            position: new THREE.Vector3(-5, height / 2, -width / 3),
+            rotation: Math.PI / 2,
+        },
+    ];
+    const boxGeometry = new THREE.BoxGeometry();
+    const boxMaterial = new THREE.MeshStandardMaterial({
+        side: THREE.DoubleSide
+    });
 
-    let width = 3, height = 3, depth = 0.001;
-    let position = new THREE.Vector3(0, 0, -5);
-
-    // Three.js mesh
-    const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial)
-    boxMesh.scale.set(width, height, depth)
-    boxMesh.castShadow = true
-    boxMesh.position.copy(position)
-    scene.add(boxMesh)
-
-    // Cannon.js body
-    const shape = new CANNON.Box(new CANNON.Vec3(width, height, depth))
-
-    const boxBody = new CANNON.Body({
-        shape: shape,
-        type: CANNON.Body.STATIC,
-        material: defaultMaterial
-    })
-    boxBody.position.copy(position)
-    world.addBody(boxBody)
+    for (let i = 0; i < walls.length; i++) {
+        // Three
+        const boxMesh = new THREE.Mesh(boxGeometry, boxMaterial);
+        boxMesh.scale.set(
+            walls[i].width,
+            walls[i].height,
+            walls[i].depth
+        );
+        boxMesh.position.copy(walls[i].position);
+        boxMesh.rotateY(walls[i].rotation);
+        scene.add(boxMesh);
+        
+        // Cannon.js body
+        const shape = new CANNON.Box(new CANNON.Vec3(
+            walls[i].width / 2,
+            walls[i].height / 2,
+            walls[i].depth / 2
+        ));
+        
+        const boxBody = new CANNON.Body({
+            shape: shape,
+            type: CANNON.Body.STATIC,
+            material: defaultMaterial,
+            quaternion: boxMesh.quaternion,
+            position: walls[i].position,
+        });
+        world.addBody(boxBody);
+    }
 }
 
 function createControls() {
@@ -181,7 +256,7 @@ function createFloor() {
         })
     );
     floor.rotation.x = - Math.PI * 0.5;
-    scene.add(floor);
+    //scene.add(floor);
 }
 
 function initCannon() {
@@ -223,14 +298,56 @@ function createSphere() {
     });
 
     // Three.js mesh
-    mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    let mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
     mesh.position.copy(position);
     scene.add(mesh);
 
     // Cannon.js body
     const shape = new CANNON.Sphere(radius)
 
-    body = new CANNON.Body({
+    let body = new CANNON.Body({
+        mass: 1,
+        position: new CANNON.Vec3(0, 3, 0),
+        shape: shape,
+        material: defaultMaterial,
+        angularFactor: new CANNON.Vec3(0, 0, 0),
+    });
+    body.position.copy(position);
+
+    body.position.add = function(v) {
+        this.x += v.x;
+        this.y += v.y;
+        this.z += v.z;
+    }
+
+    world.addBody(body);
+
+    // Save in objects
+    objectsToUpdate.push({ mesh, body });
+
+    return {
+        body,
+        mesh,
+    };
+};
+
+function createBox() {
+    let width = 1, height = 1, depth = 1;
+    let position = { x: 0, z: 0, y: 3 };
+
+    const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const boxMaterial = new THREE.MeshStandardMaterial();
+
+    // Three.js mesh
+    const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
+    mesh.scale.set(width, height, depth);
+    mesh.position.copy(position);
+    scene.add(mesh);
+
+    // Cannon.js body
+    const shape = new CANNON.Box(new CANNON.Vec3(width, height, depth));
+
+    let body = new CANNON.Body({
         mass: 1,
         position: new CANNON.Vec3(0, 3, 0),
         shape: shape,
@@ -249,6 +366,11 @@ function createSphere() {
 
     // Save in objects
     objectsToUpdate.push({ mesh, body });
+
+    return {
+        body,
+        mesh,
+    };
 };
 
 const animate = () =>
@@ -261,9 +383,9 @@ const animate = () =>
     speed = 0;
 
     if (keys.w) {
-        speed = -0.1;
+        speed = -0.05;
     } else if (keys.s) {
-        speed = 0.1;
+        speed = 0.05;
     }
 
     if (keys.a) {
