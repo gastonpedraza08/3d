@@ -198,7 +198,7 @@ function initCannon() {
         defaultMaterial,
         {
             friction: 0.1,
-            restitution: 0.7
+            restitution: 0
         }
     );
     world.defaultContactMaterial = defaultContactMaterial;
