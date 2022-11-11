@@ -1,7 +1,5 @@
 import './style.css';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import * as dat from 'lil-gui';
 import * as CANNON from 'cannon-es';
 import Stats from "three/examples/jsm/libs/stats.module";
 
@@ -24,16 +22,7 @@ const stats = Stats();
 //classes
 CANNON.Body.prototype.rotateOnAxis = function (axis, angle) {
     _q1.setFromAxisAngle(axis, angle);
-    let quaternionHelper = new THREE.Quaternion();
-    quaternionHelper.copy(this.quaternion);
-    
-    quaternionHelper.multiply(_q1);
-    this.quaternion.x = quaternionHelper._x;
-    this.quaternion.y = quaternionHelper._y;
-    this.quaternion.z = quaternionHelper._z;
-    this.quaternion.w = quaternionHelper._w;
-
-    return this;
+    this.quaternion.mult(_q1, this.quaternion);
 }
 
 CANNON.Body.prototype.rotateY = function(angle) {
