@@ -4,11 +4,11 @@ import * as CANNON from 'cannon-es';
 import Stats from "three/examples/jsm/libs/stats.module";
 
 // utils 
-const _yAxis = /*@__PURE__*/new THREE.Vector3(0, 1, 0);
-const _q1 = /*@__PURE__*/new THREE.Quaternion();
+const _yAxis = new CANNON.Vec3(0, 1, 0);
+const _q1 = new CANNON.Quaternion();
 let velocity = 0.0, speed = 0;
-let vectorHelper = new THREE.Vector3();
-let _zAxis = new THREE.Vector3(0, 0, 1);
+let vectorHelper = new CANNON.Vec3();
+let _zAxis = new CANNON.Vec3(0, 0, 1);
 let keys = {
     w: false,
     s: false,
@@ -20,6 +20,26 @@ let keys = {
 const stats = Stats();
 
 //classes
+CANNON.Vec3.prototype.applyQuaternion = function(q) {
+    const x = this.x,
+        y = this.y,
+        z = this.z;
+    const qx = q.x,
+        qy = q.y,
+        qz = q.z,
+        qw = q.w;
+
+    const ix = qw * x + qy * z - qz * y;
+    const iy = qw * y + qz * x - qx * z;
+    const iz = qw * z + qx * y - qy * x;
+    const iw = -qx * x - qy * y - qz * z;
+
+    this.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+    this.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+    this.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+    return this;
+};
+
 CANNON.Body.prototype.rotateOnAxis = function (axis, angle) {
     _q1.setFromAxisAngle(axis, angle);
     this.quaternion.mult(_q1, this.quaternion);
@@ -39,6 +59,9 @@ const clock = new THREE.Clock();
 let oldElapsedTime = 0;
 let objectsToUpdate = [];
 let relativeCameraOffset;
+let elapsedTime, deltaTime;
+let position;
+let cameraOffset;
 
 // cannon variables
 let world, defaultMaterial, body;
@@ -193,12 +216,10 @@ function createSphere() {
     objectsToUpdate.push({ mesh, body });
 };
 
-let position;
-
 const animate = () =>
 {
-    const elapsedTime = clock.getElapsedTime();
-    const deltaTime = elapsedTime - oldElapsedTime;
+    elapsedTime = clock.getElapsedTime();
+    deltaTime = elapsedTime - oldElapsedTime;
     oldElapsedTime = elapsedTime;
 
     // player movement
@@ -218,7 +239,7 @@ const animate = () =>
 
     velocity += (speed - velocity) * 0.3;
     vectorHelper.copy(_zAxis).applyQuaternion(body.quaternion);
-    position = vectorHelper.multiplyScalar(velocity);
+    position = vectorHelper.scale(velocity, vectorHelper);
     body.position.add(position);
 
     // Update physics
@@ -231,7 +252,7 @@ const animate = () =>
     }
 
     relativeCameraOffset = new THREE.Vector3(0, 2, 3);
-    const cameraOffset = relativeCameraOffset.applyMatrix4(
+    cameraOffset = relativeCameraOffset.applyMatrix4(
         mesh.matrixWorld
     );
     camera.position.copy(cameraOffset);
