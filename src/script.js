@@ -188,7 +188,7 @@ function createFloor() {
 function initCannon() {
     world = new CANNON.World();
     world.broadphase = new CANNON.SAPBroadphase(world);
-    world.allowSleep = true;
+    world.allowSleep = false;
     world.gravity.set(0, - 9.82, 0);
 
     // Default material
@@ -205,8 +205,9 @@ function initCannon() {
 
     // Floor
     const floorShape = new CANNON.Plane();
-    const floorBody = new CANNON.Body();
-    floorBody.mass = 0;
+    const floorBody = new CANNON.Body({
+        type: CANNON.Body.STATIC
+    });
     floorBody.addShape(floorShape);
     floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(- 1, 0, 0), Math.PI * 0.5);
     world.addBody(floorBody);
