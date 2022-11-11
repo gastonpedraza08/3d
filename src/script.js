@@ -141,8 +141,14 @@ function createLight() {
 }
 
 function createFloor() {
+    // grid helper
+    const size = 20;
+    const divisions = 20;
+    const gridHelper = new THREE.GridHelper(size, divisions);
+    scene.add(gridHelper);
+
     const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(10, 10),
+        new THREE.PlaneGeometry(20, 20),
         new THREE.MeshStandardMaterial({
             color: '#777777',
         })
@@ -179,7 +185,7 @@ function initCannon() {
 }
 
 function createSphere() {
-    let radius = 1;
+    let radius = 0.5;
     let position = { x: 0, z: 0, y: 3 };
 
     const sphereGeometry = new THREE.SphereGeometry(radius, 20, 20);
