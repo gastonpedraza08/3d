@@ -20,7 +20,7 @@ CANNON.Body.prototype.rotateY = function(angle) {
 }
 
 // three variables
-let canvas, scene, camera, renderer, mesh;
+let canvas, scene, camera, renderer, mesh, floor, stairs;
 let sizes = {
     width: window.innerWidth,
     height: window.innerHeight
@@ -32,6 +32,8 @@ let relativeCameraOffset;
 let elapsedTime, deltaTime;
 let position;
 let cameraOffset;
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
 
 // cannon variables
 let world, defaultMaterial, body, stairsId;
@@ -70,12 +72,12 @@ function createStairs() {
     const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
     const boxMaterial = new THREE.MeshStandardMaterial();
 
-    // Three.js mesh
-    const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
-    mesh.scale.set(width, height, depth);
-    mesh.position.copy(position);
-    mesh.rotateX(-1);
-    scene.add(mesh);
+    // Three.js stairs
+    stairs = new THREE.Mesh(boxGeometry, boxMaterial);
+    stairs.scale.set(width, height, depth);
+    stairs.position.copy(position);
+    stairs.rotateX(-1);
+    scene.add(stairs);
 
     // Cannon.js body
     const shape = new CANNON.Box(new CANNON.Vec3(
@@ -193,7 +195,18 @@ function createWalls() {
 }
 
 function createControls() {
-    console.log("create click control")
+    canvas.addEventListener('click', function(event) {
+        pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	    pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const intersects = raycaster.intersectObjects([floor, stairs]);
+        if (intersects.length > 0) {
+            body.position.x = intersects[0].point.x;
+            body.position.z = intersects[0].point.z;
+            console.log(intersects[0].point.x)
+            console.log(intersects[0].point.z)
+        }
+    });
 }
 
 function setupRenderer() {
@@ -228,16 +241,16 @@ function createFloor() {
     const size = 20;
     const divisions = 20;
     const gridHelper = new THREE.GridHelper(size, divisions);
-    scene.add(gridHelper);
+    //scene.add(gridHelper);
 
-    const floor = new THREE.Mesh(
+    floor = new THREE.Mesh(
         new THREE.PlaneGeometry(20, 20),
         new THREE.MeshStandardMaterial({
             color: '#777777',
         })
     );
     floor.rotation.x = - Math.PI * 0.5;
-    //scene.add(floor);
+    scene.add(floor);
 }
 
 function initCannon() {
@@ -383,8 +396,8 @@ const animate = () =>
     cameraOffset = relativeCameraOffset.applyMatrix4(
         mesh.matrixWorld
     );
-    camera.position.copy(cameraOffset);
-    camera.lookAt(mesh.position);
+    //camera.position.copy(cameraOffset);
+    //camera.lookAt(mesh.position);
 
     renderer.render(scene, camera);
     window.requestAnimationFrame(animate);
