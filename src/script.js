@@ -32,6 +32,7 @@ let relativeCameraOffset;
 let elapsedTime, deltaTime;
 let position;
 let cameraOffset;
+let initialPosition = new THREE.Vector3(), finalPosition = new THREE.Vector3(), velocity = 0.025;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
@@ -64,6 +65,63 @@ function initThree() {
 
     animate();
 }
+
+function linearLerp(start, end, velocity) {
+    let diffX = Math.abs(start.x - end.x);
+    let diffZ = Math.abs(start.z - end.z);
+
+    if (diffX > diffZ) {
+        if (start.x > end.x && start.x - end.x > velocity) {
+            let percentage = velocity / diffX;
+            let zVelocity = diffZ * percentage;
+
+            start.x -= velocity;
+
+            if (start.z > end.z && start.z - end.z > velocity) {
+                start.z -= zVelocity;
+            } else {
+                start.z += zVelocity;
+            }
+        } else if (start.x < end.x && end.x - start.x > velocity) {
+            let percentage = velocity / diffX;
+            let zVelocity = diffZ * percentage;
+
+            start.x += velocity;
+
+            if (start.z > end.z && start.z - end.z > velocity) {
+                start.z -= zVelocity;
+            } else {
+                start.z += zVelocity;
+            }
+        }
+    } else {
+        if (start.z > end.z && start.z - end.z > velocity) {
+            let percentage = velocity / diffZ;
+            let xVelocity = diffX * percentage;
+
+            start.z -= velocity;
+
+            if (start.x > end.x && start.x - end.x > velocity) {
+                start.x -= xVelocity;
+            } else {
+                start.x += xVelocity;
+            }
+        } else if (start.z < end.z && end.z - start.z > velocity) {
+            let percentage = velocity / diffZ;
+            let xVelocity = diffX * percentage;
+
+            start.z += velocity;
+
+            if (start.x > end.x && start.x - end.x > velocity) {
+                start.x -= xVelocity;
+            } else {
+                start.x += xVelocity;
+            }
+        }
+    }
+
+    return start;
+};
 
 function createStairs() {
     let width = 1, height = 8, depth = 0.001;
@@ -201,11 +259,12 @@ function createControls() {
         raycaster.setFromCamera(pointer, camera);
         const intersects = raycaster.intersectObjects([floor, stairs]);
         if (intersects.length > 0) {
-            body.position.x = intersects[0].point.x;
-            body.position.z = intersects[0].point.z;
-            console.log(intersects[0].point.x)
-            console.log(intersects[0].point.z)
+            finalPosition.copy(intersects[0].point);
         }
+    });
+
+    body.addEventListener('collide', function(e) {
+        finalPosition.copy(body.position);
     });
 }
 
@@ -377,11 +436,16 @@ function createBox() {
     };
 };
 
+let result;
+
 const animate = () =>
 {
     elapsedTime = clock.getElapsedTime();
     deltaTime = elapsedTime - oldElapsedTime;
     oldElapsedTime = elapsedTime;
+
+    result = linearLerp(body.position, finalPosition, velocity);
+    body.position.copy(result)
 
     // Update physics
     world.step(1 / 60, deltaTime, 3);
@@ -396,8 +460,8 @@ const animate = () =>
     cameraOffset = relativeCameraOffset.applyMatrix4(
         mesh.matrixWorld
     );
-    //camera.position.copy(cameraOffset);
-    //camera.lookAt(mesh.position);
+    camera.position.copy(cameraOffset);
+    camera.lookAt(mesh.position);
 
     renderer.render(scene, camera);
     window.requestAnimationFrame(animate);
