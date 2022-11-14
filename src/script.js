@@ -64,7 +64,7 @@ let position;
 let cameraOffset;
 
 // cannon variables
-let world, defaultMaterial, body;
+let world, defaultMaterial, body, stairsId;
 
 function initThree() {
     document.body.appendChild(stats.dom);
@@ -121,6 +121,9 @@ function createStairs() {
         material: defaultMaterial,
         quaternion: mesh.quaternion,
     });
+
+    stairsId = body.id;
+
     world.addBody(body);
 }
 
@@ -353,6 +356,16 @@ function createSphere() {
     }
 
     world.addBody(body);
+
+    body.addEventListener('collide', function(e) {
+        if (e.body.id === stairsId) {
+            console.log("gravity stairs")
+            world.gravity.set(0, - 9.82, -7);
+        } else {
+            console.log("normal gravity")
+            world.gravity.set(0, - 9.82, 0);
+        }
+    });
 
     // Save in objects
     objectsToUpdate.push({ mesh, body });
