@@ -6,39 +6,9 @@ import Stats from "three/examples/jsm/libs/stats.module";
 // utils 
 const _yAxis = new CANNON.Vec3(0, 1, 0);
 const _q1 = new CANNON.Quaternion();
-let velocity = 0.0, speed = 0;
-let vectorHelper = new CANNON.Vec3();
-let _zAxis = new CANNON.Vec3(0, 0, 1);
-let keys = {
-    w: false,
-    s: false,
-    a: false,
-    d: false,
-}
 
 // stats
 const stats = Stats();
-
-//classes
-CANNON.Vec3.prototype.applyQuaternion = function(q) {
-    const x = this.x,
-        y = this.y,
-        z = this.z;
-    const qx = q.x,
-        qy = q.y,
-        qz = q.z,
-        qw = q.w;
-
-    const ix = qw * x + qy * z - qz * y;
-    const iy = qw * y + qz * x - qx * z;
-    const iz = qw * z + qx * y - qy * x;
-    const iw = -qx * x - qy * y - qz * z;
-
-    this.x = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-    this.y = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-    this.z = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-    return this;
-};
 
 CANNON.Body.prototype.rotateOnAxis = function (axis, angle) {
     _q1.setFromAxisAngle(axis, angle);
@@ -223,31 +193,7 @@ function createWalls() {
 }
 
 function createControls() {
-    window.addEventListener('keydown', function(e) {
-        if (e.key === 'w') {
-            keys.w = true;
-        } else if (e.key === 's') {
-            keys.s = true;
-        }
-        if (e.key === 'a') {
-            keys.a = true;
-        } else if (e.key === 'd') {
-            keys.d = true;
-        }
-    });
-
-    window.addEventListener('keyup', function(e) {
-        if (e.key === 'w') {
-            keys.w = false;
-        } else if (e.key === 's') {
-            keys.s = false;
-        }
-        if (e.key === 'a') {
-            keys.a = false;
-        } else if (e.key === 'd') {
-            keys.d = false;
-        }
-     });
+    console.log("create click control")
 }
 
 function setupRenderer() {
@@ -423,26 +369,6 @@ const animate = () =>
     elapsedTime = clock.getElapsedTime();
     deltaTime = elapsedTime - oldElapsedTime;
     oldElapsedTime = elapsedTime;
-
-    // player movement
-    speed = 0;
-
-    if (keys.w) {
-        speed = -0.05;
-    } else if (keys.s) {
-        speed = 0.05;
-    }
-
-    if (keys.a) {
-        body.rotateY(0.05);
-    } else if (keys.d) {
-        body.rotateY(-0.05);
-    }
-
-    velocity += (speed - velocity) * 0.3;
-    vectorHelper.copy(_zAxis).applyQuaternion(body.quaternion);
-    position = vectorHelper.scale(velocity, vectorHelper);
-    body.position.add(position);
 
     // Update physics
     world.step(1 / 60, deltaTime, 3);
