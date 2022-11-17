@@ -53,9 +53,6 @@ function initThree() {
     body = player.body;
     mesh = player.mesh;
     
-    //let player = createBox();
-    //body = player.body;
-    //mesh = player.mesh;
     createFloor();
     createLight();
     setupRenderer();
@@ -149,7 +146,7 @@ function createStairs() {
         position,
         shape: shape,
         material: defaultMaterial,
-        quaternion: mesh.quaternion,
+        quaternion: stairs.quaternion,
     });
 
     stairsId = body.id;
@@ -264,7 +261,11 @@ function createControls() {
     });
 
     body.addEventListener('collide', function(e) {
-        finalPosition.copy(body.position);
+        if (e.body.id === stairsId) {
+            console.log("ESCALERA")
+        } else {
+            finalPosition.copy(body.position);
+        }
     });
 }
 
@@ -394,48 +395,6 @@ function createSphere() {
     };
 };
 
-function createBox() {
-    let width = 1, height = 1, depth = 1;
-    let position = { x: 0, z: 0, y: 3 };
-
-    const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const boxMaterial = new THREE.MeshStandardMaterial();
-
-    // Three.js mesh
-    const mesh = new THREE.Mesh(boxGeometry, boxMaterial);
-    mesh.scale.set(width, height, depth);
-    mesh.position.copy(position);
-    scene.add(mesh);
-
-    // Cannon.js body
-    const shape = new CANNON.Box(new CANNON.Vec3(width, height, depth));
-
-    let body = new CANNON.Body({
-        mass: 1,
-        position: new CANNON.Vec3(0, 3, 0),
-        shape: shape,
-        material: defaultMaterial,
-        angularFactor: new CANNON.Vec3(0, 0, 0)
-    });
-    body.position.copy(position);
-
-    body.position.add = function(v) {
-        this.x += v.x;
-        this.y += v.y;
-        this.z += v.z;
-    }
-
-    world.addBody(body);
-
-    // Save in objects
-    objectsToUpdate.push({ mesh, body });
-
-    return {
-        body,
-        mesh,
-    };
-};
-
 let result;
 
 const animate = () =>
@@ -445,7 +404,7 @@ const animate = () =>
     oldElapsedTime = elapsedTime;
 
     result = linearLerp(body.position, finalPosition, velocity);
-    body.position.copy(result)
+    body.position.copy(result);
 
     // Update physics
     world.step(1 / 60, deltaTime, 3);
