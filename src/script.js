@@ -12,14 +12,10 @@ let world, defaultMaterial, body, stairsId;
 function initThree() {
     let canvas = document.querySelector('canvas.webgl');
     game = new Game('keys', true, canvas);
-    
-    initCannon();
-
-    let player = createSphere();
-    body = player.body;
-    mesh = player.mesh;
-
-    game.setBody(body);
+    world = game.cannon.world;
+    defaultMaterial = game.cannon.defaultMaterial;
+    body = game.body;
+    mesh = game.mesh;
     
     createFloor();
     createLight();
@@ -61,6 +57,16 @@ function createStairs() {
     stairsId = body.id;
 
     world.addBody(body);
+
+    game.body.addEventListener('collide', function(e) {
+        if (e.body.id === stairsId) {
+            console.log("gravity stairs")
+            game.cannon.world.gravity.set(0, - 9.82, -7);
+        } else {
+            console.log("normal gravity")
+            game.cannon.world.gravity.set(0, - 9.82, 0);
+        }
+    });
 }
 
 function createWalls() {
@@ -180,94 +186,9 @@ function createFloor() {
     //game.scene.add(floor);
 }
 
-function initCannon() {
-    world = new CANNON.World();
-    world.broadphase = new CANNON.SAPBroadphase(world);
-    world.allowSleep = false;
-    world.gravity.set(0, - 9.82, 0);
-
-    // Default material
-    defaultMaterial = new CANNON.Material('default');
-    const defaultContactMaterial = new CANNON.ContactMaterial(
-        defaultMaterial,
-        defaultMaterial,
-        {
-            friction: 0.1,
-            restitution: 0
-        }
-    );
-    world.defaultContactMaterial = defaultContactMaterial;
-
-    // Floor
-    const floorShape = new CANNON.Plane();
-    const floorBody = new CANNON.Body({
-        type: CANNON.Body.STATIC
-    });
-    floorBody.addShape(floorShape);
-    floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(- 1, 0, 0), Math.PI * 0.5);
-    world.addBody(floorBody);
-}
-
-function createSphere() {
-    let radius = 0.5;
-    let position = { x: 0, z: 0, y: 3 };
-
-    const sphereGeometry = new THREE.SphereGeometry(radius, 20, 20);
-    const sphereMaterial = new THREE.MeshStandardMaterial({
-        metalness: 0.3,
-        roughness: 0.4,
-    });
-
-    // Three.js mesh
-    let mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-    mesh.position.copy(position);
-    game.scene.add(mesh);
-
-    // Cannon.js body
-    const shape = new CANNON.Sphere(radius)
-
-    let body = new CANNON.Body({
-        mass: 1,
-        position: new CANNON.Vec3(0, 3, 0),
-        shape: shape,
-        material: defaultMaterial,
-        angularFactor: new CANNON.Vec3(0, 0, 0),
-    });
-    body.position.copy(position);
-
-    body.position.add = function(v) {
-        this.x += v.x;
-        this.y += v.y;
-        this.z += v.z;
-    }
-
-    world.addBody(body);
-
-    body.addEventListener('collide', function(e) {
-        if (e.body.id === stairsId) {
-            console.log("gravity stairs")
-            world.gravity.set(0, - 9.82, -7);
-        } else {
-            console.log("normal gravity")
-            world.gravity.set(0, - 9.82, 0);
-        }
-    });
-
-    // Save in objects
-    game.objectsToUpdate.push({ mesh, body });
-
-    return {
-        body,
-        mesh,
-    };
-};
-
 const animate = () =>
 {
     game.update(mesh);
-
-    // Update physics
-    world.step(1 / 60, game.deltaTime, 3);
 
     window.requestAnimationFrame(animate);
 }

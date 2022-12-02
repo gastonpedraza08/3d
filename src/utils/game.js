@@ -77,6 +77,8 @@ class Game {
 		this.position = { x: 0, y: 0, z: 0 };
 
 		this.createControls();
+		this.initCannon();
+		this.createSphere();
 
 		// setup renderer
 		this.renderer = new THREE.WebGLRenderer({
@@ -143,10 +145,8 @@ class Game {
 		this.vectorHelper.copy(this._zAxis).applyQuaternion(this.body.quaternion);
 		this.position = this.vectorHelper.scale(this.velocity, this.vectorHelper);
 		this.body.position.add(this.position);
-	}
 
-	setBody(body) {
-		this.body = body;
+		this.cannon.world.step(1 / 60, this.deltaTime, 3);
 	}
 
 	createControls() {
@@ -179,6 +179,76 @@ class Game {
 				});
 			default:
 		}
+	}
+	initCannon() {
+		this.cannon = {};
+		this.cannon.world = new CANNON.World();
+		this.cannon.world.broadphase = new CANNON.SAPBroadphase(this.cannon.world);
+		this.cannon.world.allowSleep = false;
+		this.cannon.world.gravity.set(0, - 9.82, 0);
+
+		// Default material
+		this.cannon.defaultMaterial = new CANNON.Material('default');
+		const defaultContactMaterial = new CANNON.ContactMaterial(
+			this.cannon.defaultMaterial,
+			this.cannon.defaultMaterial,
+			{
+				friction: 0.1,
+				restitution: 0
+			}
+		);
+		this.cannon.world.defaultContactMaterial = defaultContactMaterial;
+
+		// Floor
+		const floorShape = new CANNON.Plane();
+		const floorBody = new CANNON.Body({
+			type: CANNON.Body.STATIC
+		});
+		floorBody.addShape(floorShape);
+		floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(- 1, 0, 0), Math.PI * 0.5);
+		this.cannon.world.addBody(floorBody);
+	}
+
+	createSphere() {
+		let radius = 0.5;
+		let position = { x: 0, z: 0, y: 3 };
+
+		const sphereGeometry = new THREE.SphereGeometry(radius, 20, 20);
+		const sphereMaterial = new THREE.MeshStandardMaterial({
+			metalness: 0.3,
+			roughness: 0.4,
+		});
+
+		// Three.js mesh
+		let mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+		mesh.position.copy(position);
+		this.scene.add(mesh);
+
+		// Cannon.js body
+		const shape = new CANNON.Sphere(radius)
+
+		let body = new CANNON.Body({
+			mass: 1,
+			position: new CANNON.Vec3(0, 3, 0),
+			shape: shape,
+			material: this.cannon.defaultMaterial,
+			angularFactor: new CANNON.Vec3(0, 0, 0),
+		});
+		body.position.copy(position);
+
+		body.position.add = function(v) {
+			this.x += v.x;
+			this.y += v.y;
+			this.z += v.z;
+		}
+
+		this.cannon.world.addBody(body);
+
+		// Save in objects
+		this.objectsToUpdate.push({ mesh, body });
+
+		this.body = body;
+		this.mesh = mesh;
 	}
 }
 
