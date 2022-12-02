@@ -17,12 +17,16 @@ function initThree() {
     body = game.body;
     mesh = game.mesh;
     
+    makeEnvironment();
+
+    animate();
+}
+
+function makeEnvironment() {
     createFloor();
     createLight();
     createWalls();
     createStairs();
-
-    animate();
 }
 
 function createStairs() {
