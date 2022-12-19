@@ -62,6 +62,7 @@ let relativeCameraOffset;
 let elapsedTime, deltaTime;
 let position;
 let cameraOffset;
+let textureLoader = new THREE.TextureLoader();
 
 // cannon variables
 let world, defaultMaterial, body, stairsId;
@@ -188,9 +189,13 @@ function createWalls() {
         },
     ];
     const boxGeometry = new THREE.BoxGeometry();
+    const texture = textureLoader.load('/imgs/wall.jpeg');
     const boxMaterial = new THREE.MeshStandardMaterial({
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
+        map: texture,
     });
+
+    boxMaterial.needsUpdate = true;
 
     for (let i = 0; i < walls.length; i++) {
         // Three
@@ -282,16 +287,24 @@ function createFloor() {
     const size = 20;
     const divisions = 20;
     const gridHelper = new THREE.GridHelper(size, divisions);
-    scene.add(gridHelper);
+    //scene.add(gridHelper);
+
+    const texture = textureLoader.load('/imgs/ground.jpg');
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.offset.set(0, 0);
+    texture.repeat.set(5, 5);
+    const material = new THREE.MeshStandardMaterial({
+        map: texture,
+    });
+
+    material.needsUpdate = true;
 
     const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(20, 20),
-        new THREE.MeshStandardMaterial({
-            color: '#777777',
-        })
+        material,
     );
     floor.rotation.x = - Math.PI * 0.5;
-    //scene.add(floor);
+    scene.add(floor);
 }
 
 function initCannon() {
