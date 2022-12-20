@@ -2,6 +2,7 @@ import './style.css';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import Stats from "three/examples/jsm/libs/stats.module";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 // utils 
 const _yAxis = new CANNON.Vec3(0, 1, 0);
@@ -63,11 +64,13 @@ let elapsedTime, deltaTime;
 let position;
 let cameraOffset;
 let textureLoader = new THREE.TextureLoader();
+let loader = new GLTFLoader();
+let buildingsPosition = [];
 
 // cannon variables
 let world, defaultMaterial, body, stairsId;
 
-function initThree() {
+async function initThree() {
     document.body.appendChild(stats.dom);
     initCannon();
 
@@ -88,11 +91,46 @@ function initThree() {
     createLight();
     setupRenderer();
     createControls();
-    createWalls();
-    createStairs();
+    //createStairs();
+    await loadBuildings();
 
     animate();
 }
+
+async function loadBuildings() {
+    buildingsPosition[0] = new THREE.Vector3(10, 0, 10);
+    await loadSkyScraperA();
+}
+
+function loadSkyScraperA() {
+    return new Promise((res, rej) => {
+      loader.load(
+        "glb/buildings/skyscraperE.glb",
+        function (gltf) {
+            const model = gltf.scene.children[0];
+            model.position.set(
+                buildingsPosition[0].x,
+                buildingsPosition[0].y,
+                buildingsPosition[0].z,
+            );
+            model.scale.set(6, 6, 6);
+            for (let i = 0; i < model.children.length; i++) {
+                model.children[i].material.metalness = 0;
+            }
+            createCannonBody(7, 1, 0.001, new THREE.Vector3(10, 0, 10));
+            scene.add(model);
+            res(true);
+        },
+        function (xhr) {
+          //console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        },
+        function (err) {
+          console.error("An error happened loading torch");
+          rej(err);
+        }
+      );
+    });
+  };
 
 function createStairs() {
     let width = 1, height = 8, depth = 0.001;
@@ -128,73 +166,43 @@ function createStairs() {
     world.addBody(body);
 }
 
-function createWalls() {
-    let width = 10, height = 2, depth = 0.001;
+function createCannonBody(width, height, depth, position) {
     let walls = [
         {
-            width: width / 3,
+            width,
             height,
             depth,
-            position: new THREE.Vector3(-width / 3, height / 2, -5),
+            position: new THREE.Vector3(position.x, height / 2, position.z + (width / 2)),
             rotation: 0,
         },
         {
-            width: width / 3,
+            width,
             height,
             depth,
-            position: new THREE.Vector3(width / 3, height / 2, -5),
+            position: new THREE.Vector3(position.x, height / 2, position.z - (width / 2)),
             rotation: 0,
         },
         {
-            width: width / 3,
+            width,
             height,
             depth,
-            position: new THREE.Vector3(width / 3, height / 2, 5),
-            rotation: 0,
-        },
-        {
-            width: width / 3,
-            height,
-            depth,
-            position: new THREE.Vector3(-width / 3, height / 2, 5),
-            rotation: 0,
-        },
-        {
-            width: width / 3,
-            height,
-            depth,
-            position: new THREE.Vector3(5, height / 2, width / 3),
+            position: new THREE.Vector3(position.x + (width / 2), height / 2, position.z),
             rotation: Math.PI / 2,
         },
         {
-            width: width / 3,
+            width,
             height,
             depth,
-            position: new THREE.Vector3(5, height / 2, -width / 3),
-            rotation: Math.PI / 2,
-        },
-        {
-            width: width / 3,
-            height,
-            depth,
-            position: new THREE.Vector3(-5, height / 2, width / 3),
-            rotation: Math.PI / 2,
-        },
-        {
-            width: width / 3,
-            height,
-            depth,
-            position: new THREE.Vector3(-5, height / 2, -width / 3),
+            position: new THREE.Vector3(position.x - (width / 2), height / 2, position.z),
             rotation: Math.PI / 2,
         },
     ];
     const boxGeometry = new THREE.BoxGeometry();
-    const texture = textureLoader.load('/imgs/wall.jpeg');
     const boxMaterial = new THREE.MeshStandardMaterial({
         side: THREE.DoubleSide,
-        map: texture,
     });
 
+    boxMaterial.transparent = true;
     boxMaterial.needsUpdate = true;
 
     for (let i = 0; i < walls.length; i++) {
@@ -284,10 +292,10 @@ function createLight() {
 
 function createFloor() {
     // grid helper
-    const size = 20;
-    const divisions = 20;
+    const size = 50;
+    const divisions = 50;
     const gridHelper = new THREE.GridHelper(size, divisions);
-    //scene.add(gridHelper);
+    scene.add(gridHelper);
 
     const texture = textureLoader.load('/imgs/ground.jpg');
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -304,7 +312,7 @@ function createFloor() {
         material,
     );
     floor.rotation.x = - Math.PI * 0.5;
-    scene.add(floor);
+    //scene.add(floor);
 }
 
 function initCannon() {
@@ -337,7 +345,7 @@ function initCannon() {
 
 function createSphere() {
     let radius = 0.5;
-    let position = { x: 0, z: 0, y: 3 };
+    let position = { x: 0, z: 20, y: 3 };
 
     const sphereGeometry = new THREE.SphereGeometry(radius, 20, 20);
     const sphereMaterial = new THREE.MeshStandardMaterial({
@@ -355,7 +363,7 @@ function createSphere() {
 
     let body = new CANNON.Body({
         mass: 1,
-        position: new CANNON.Vec3(0, 3, 0),
+        position,
         shape: shape,
         material: defaultMaterial,
         angularFactor: new CANNON.Vec3(0, 0, 0),
@@ -466,7 +474,7 @@ const animate = () =>
         object.mesh.quaternion.copy(object.body.quaternion);
     }
 
-    relativeCameraOffset = new THREE.Vector3(0, 2, 3);
+    relativeCameraOffset = new THREE.Vector3(0, 1, 3);
     cameraOffset = relativeCameraOffset.applyMatrix4(
         mesh.matrixWorld
     );
